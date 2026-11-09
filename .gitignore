@@ -1,0 +1,44 @@
+# Quartus generated output
+db/
+incremental_db/
+output_files/
+*.qws
+*.jdi
+*.jditmp
+*.sof
+*.pof
+*.rbf
+*.rpt
+*.summary
+*.smsg
+*.qmsg
+*.rdb
+*.hdb
+*.cdb
+*.idb
+*.logdb
+*.ammdb
+*.fit.*
+*.map.*
+*.sta.*
+*.asm.*
+*.vpr.*
+*.pin
+
+# Questa / ModelSim generated output
+work/
+rtl_work/
+transcript
+vsim.wlf
+*.wlf
+*.vcd
+*.vpd
+*.vstf
+modelsim.ini
+*.do.bak*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
