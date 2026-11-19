@@ -56,7 +56,7 @@ Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` an
 - The start-bit watchdog permits the initial alignment latency **plus** a full start-bit period.
 - The existing test measures only the start-bit LOW pulse with `8'hFF`; it does **not** prove full-frame timing or LSB-first data ordering.
 - Phase-test evidence received from the author: **434/434 passed**, 0 failures (Questa Transcript), with an 8,680,000 ps start-bit waveform measurement.
-- A new independent `tb/test_uart_tx_frame.sv` checks midpoint values for 5 full 8N1 frames (`55`, `AA`, `53`, `00`, `FF`), checks captured data despite an input-bus change, checks busy at frame start/end, and checks nine consecutive output-edge intervals for `0x55`. **New test has not yet been executed.**
+- The independent `tb/test_uart_tx_frame.sv` test passed 5 full 8N1 midpoint checks (`55`, `AA`, `53`, `00`, `FF`), tested captured data despite an input-bus change, checked busy at frame start/end, and passed nine output-edge intervals for `0x55` (author's Questa Transcript, 19 Nov 2026).
 - Run the existing UART loopback regression afterward; then extend verification of reset and re-requests while busy.
 
 
@@ -74,15 +74,15 @@ add wave -r sim:/test_uart_tx_frame/*
 run -all
 ```
 
-Expected (not yet confirmed) summary: `TX FRAME SUMMARY: 5 frames passed, 9 edge intervals passed`.
+**Observed (author's Questa Transcript, 19 Nov 2026):** `TX FRAME SUMMARY: 5 frames passed, 9 edge intervals passed`. Compilation of the three modules completed with zero errors and zero warnings. `vopt-10908` is a tool warning about reduced optimizations when `+acc` is enabled; it is not an RTL compile warning.
 
 This test checks all 10 midpoint values of 8N1 frames and measures all nine **visible** value-change boundaries of a `0x55` frame. It does not itself measure a full stop interval on the serial line, because the line stays HIGH after STOP into IDLE. A separate busy/ready handshake test is advisable.
 
 ## Acceptance criteria
 
 - [PASS, Questa author run] Every phase offset 0–433 yields a 434-cycle start LOW pulse.
-- [PENDING independent test] `tx_data` is latched at accepted `tx_start` and sent D0-first; verify `8'h53` and alternating patterns.
-- [PENDING independent test] Verify the frame data and nine visible edge intervals using the `0x55` pattern, then check stop/ready handshake.
+- [PASS, author's Questa run] `tx_data` is latched at accepted `tx_start` and sent D0-first for checked payloads including `8'h53` and alternating patterns.
+- [PASS, author's Questa run] Frame midpoint data and nine visible edge intervals with `0x55`. [PENDING] Dedicated stop/ready handshake under back-to-back requests.
 - Verify `tx_busy`, reset behavior and re-requests while busy.
 - Existing UART loopback regression remains passing.
 - Build outputs, timestamped simulator log and at least one annotated waveform are retained as evidence. Do not commit generated simulator libraries (`work/`, `rtl_work/`) or WLF files.
@@ -94,4 +94,4 @@ This test checks all 10 midpoint values of 8N1 frames and measures all nine **vi
 
 ## Limitations
 
-This document records test output supplied by the project author. It is not a substitute for raw Questa logs, review of the full repository revision, or on-board verification.
+This document records test output supplied by the project author. A source review was performed against the live GitHub development branch, but the simulations have not been independently rerun here. Dedicated ready/handshake, reset-during-transmission, post-fix integration, and hardware checks remain outstanding.
