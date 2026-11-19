@@ -3,8 +3,8 @@
 ## Status
 
 - **Baseline observation:** reproduced in user's Questa Altera Starter FPGA Edition 2025.2 run, 12 November 2026.
-- **RTL correction:** pending.
-- **Post-fix simulation:** not yet run.
+- **RTL correction:** proposed on branch `fix/uart-tx-start-bit-alignment` (not yet simulator-verified).
+- **Post-fix simulation:** not yet run; the updated phase regression now checks all 434 offsets.
 - **Physical hardware validation:** not established.
 
 ## Configuration
@@ -38,7 +38,7 @@ The following data is transcribed from the user's Questa Transcript; it has not 
 
 In the first trial, TX falls at 110,000 ps and rises at 8,790,000 ps: 8,680,000 ps / 20,000 ps per clock = 434 cycles. In the second trial, the start-bit pulse measures 433 cycles.
 
-## Proposed minimal RTL correction
+## Implemented candidate RTL correction (awaiting verification)
 
 Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` and `START`:
 
@@ -49,6 +49,15 @@ Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` an
 5. Document that this shared-divider approach adds up to almost one bit period of start latency after request acceptance. A transmitter-local divider offers a different latency tradeoff.
 
 **Do not mark complete on code inspection alone:** rerun the phase test and capture measured intervals.
+
+### Updated verification procedure
+
+- On the fix branch, `tb/test_uart_tx.sv` sweeps **all 434** initial phase offsets.
+- The start-bit watchdog permits the initial alignment latency **plus** a full start-bit period.
+- The existing test measures only the start-bit LOW pulse with `8'hFF`; it does **not** prove full-frame timing or LSB-first data ordering.
+- Run the phase test in Questa and record pass/fail totals and waveforms; only then can this correction be called verified.
+- Run the existing UART loopback regression afterward. Add separate frame-level checks for 8 data bits, stop bit, and `tx_busy`.
+
 
 ## Acceptance criteria
 
