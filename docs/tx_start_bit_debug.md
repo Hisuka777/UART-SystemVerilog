@@ -3,8 +3,8 @@
 ## Status
 
 - **Baseline observation:** reproduced in user's Questa Altera Starter FPGA Edition 2025.2 run, 12 November 2026.
-- **RTL correction:** proposed on branch `fix/uart-tx-start-bit-alignment` (not yet simulator-verified).
-- **Post-fix simulation:** not yet run; the updated phase regression now checks all 434 offsets.
+- **RTL correction:** implemented on branch `fix/uart-tx-start-bit-alignment`; start-bit timing regression passed in author's Questa run.
+- **Post-fix simulation:** on 19 November 2026, the author reported **434 passed, 0 failed** for phase offsets 0–433 in Questa Altera Starter FPGA Edition 2025.2. A waveform screenshot showed a LOW pulse from 26,250,000 ps to 34,930,000 ps (434 system clocks).
 - **Physical hardware validation:** not established.
 
 ## Configuration
@@ -38,7 +38,7 @@ The following data is transcribed from the user's Questa Transcript; it has not 
 
 In the first trial, TX falls at 110,000 ps and rises at 8,790,000 ps: 8,680,000 ps / 20,000 ps per clock = 434 cycles. In the second trial, the start-bit pulse measures 433 cycles.
 
-## Implemented candidate RTL correction (awaiting verification)
+## RTL correction and phase-test verification
 
 Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` and `START`:
 
@@ -48,22 +48,41 @@ Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` an
 4. Subsequent data and stop-bit transitions continue on baud ticks. With registered outputs, verify the actual TX edge-to-edge width in simulation; avoid changing the output from two different states in a way that introduces a one-cycle shift.
 5. Document that this shared-divider approach adds up to almost one bit period of start latency after request acceptance. A transmitter-local divider offers a different latency tradeoff.
 
-**Do not mark complete on code inspection alone:** rerun the phase test and capture measured intervals.
+**Phase timing has been confirmed in the user's Questa run.** This does not yet demonstrate complete frame-level correctness, loopback regression, Quartus timing closure, or FPGA operation.
 
 ### Updated verification procedure
 
 - On the fix branch, `tb/test_uart_tx.sv` sweeps **all 434** initial phase offsets.
 - The start-bit watchdog permits the initial alignment latency **plus** a full start-bit period.
 - The existing test measures only the start-bit LOW pulse with `8'hFF`; it does **not** prove full-frame timing or LSB-first data ordering.
-- Run the phase test in Questa and record pass/fail totals and waveforms; only then can this correction be called verified.
-- Run the existing UART loopback regression afterward. Add separate frame-level checks for 8 data bits, stop bit, and `tx_busy`.
+- Phase-test evidence received from the author: **434/434 passed**, 0 failures (Questa Transcript), with an 8,680,000 ps start-bit waveform measurement.
+- A new independent `tb/test_uart_tx_frame.sv` checks midpoint values for 5 full 8N1 frames (`55`, `AA`, `53`, `00`, `FF`), checks captured data despite an input-bus change, checks busy at frame start/end, and checks nine consecutive output-edge intervals for `0x55`. **New test has not yet been executed.**
+- Run the existing UART loopback regression afterward; then extend verification of reset and re-requests while busy.
 
+
+## Running the independent TX frame regression in Questa
+
+From the repository root, using a separate simulation library:
+
+```tcl
+vlib work_frame
+vlog -work work_frame -sv rtl/baud_generator.sv
+vlog -work work_frame -sv rtl/uart_tx.sv
+vlog -work work_frame -sv tb/test_uart_tx_frame.sv
+vsim -t 1ps -voptargs=+acc work_frame.test_uart_tx_frame
+add wave -r sim:/test_uart_tx_frame/*
+run -all
+```
+
+Expected (not yet confirmed) summary: `TX FRAME SUMMARY: 5 frames passed, 9 edge intervals passed`.
+
+This test checks all 10 midpoint values of 8N1 frames and measures all nine **visible** value-change boundaries of a `0x55` frame. It does not itself measure a full stop interval on the serial line, because the line stays HIGH after STOP into IDLE. A separate busy/ready handshake test is advisable.
 
 ## Acceptance criteria
 
-- Every checked phase (ideally all 434) yields a 434-cycle start LOW pulse.
-- `tx_data` is latched at accepted `tx_start` and sent D0-first; include an asymmetric pattern such as `8'h53`.
-- Verify all eight data-bit intervals and a complete stop-bit interval, not just the first LOW pulse.
+- [PASS, Questa author run] Every phase offset 0–433 yields a 434-cycle start LOW pulse.
+- [PENDING independent test] `tx_data` is latched at accepted `tx_start` and sent D0-first; verify `8'h53` and alternating patterns.
+- [PENDING independent test] Verify the frame data and nine visible edge intervals using the `0x55` pattern, then check stop/ready handshake.
 - Verify `tx_busy`, reset behavior and re-requests while busy.
 - Existing UART loopback regression remains passing.
 - Build outputs, timestamped simulator log and at least one annotated waveform are retained as evidence. Do not commit generated simulator libraries (`work/`, `rtl_work/`) or WLF files.
@@ -71,7 +90,7 @@ Preserve the shared baud generator and add a `WAIT_BAUD` state between `IDLE` an
 ## Recommended Git history
 
 1. `test(uart): reproduce TX start-bit timing defect` — phase test and this diagnosis; include raw transcript in `docs/evidence/` if available.
-2. `fix(uart-tx): align start bit to baud tick` — only after source correction and verification; update this document with actual post-fix results.
+2. `fix(uart-tx): align start bit to baud tick` — proposed on development branch with phase test verified; complete independent frame and integration regression before merging.
 
 ## Limitations
 
