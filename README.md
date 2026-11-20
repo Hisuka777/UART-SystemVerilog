@@ -124,7 +124,7 @@ The testbench instantiates `UART`, connects TX to RX for loopback, and tests the
 
 A six-phase diagnostic first exposed a **variable-length start bit** (1/6 passed), caused by starting TX without aligning to the free-running baud generator. The correction adds `STATE_WAIT_BAUD` before `STATE_START`, keeping TX HIGH until the next baud boundary.
 
-**Questa 2025.2 results supplied by the project author (19 November 2026):**
+**Questa 2025.2 results supplied by the project author (19-20 November 2026):**
 
 | Regression | Observed |
 |---|---:|
@@ -132,10 +132,14 @@ A six-phase diagnostic first exposed a **variable-length start bit** (1/6 passed
 | Complete 8N1 midpoint sequence (`55`, `AA`, `53`, `00`, `FF`) | **5 passed** |
 | Visible edge intervals for `8'h55` | **9 passed** |
 | Example start-bit width from waveform cursors | **8,680,000 ps = 434 clocks** |
+| Busy handshake: complete frames | **2 passed (`53`, `A6`)** |
+| Busy-request rejection | **1 passed (`F0` ignored)** |
+| STOP-to-ready timing | **433 clocks observed and checked** |
+| Post-fix TX/RX loopback | **8 passed, 0 failed** |
 
-The tests independently exercise transmitter timing and data order; they do not establish post-fix integration, RX robustness, physical FPGA behavior, or a complete ready/handshake specification. A dedicated busy-rejection and consecutive-frame testbench is available at [`tb/test_uart_tx_handshake.sv`](tb/test_uart_tx_handshake.sv) and **awaits simulation**.
+These results verify the exercised TX timing, full-frame samples, selected busy/ready scenarios, and eight corrected TX/RX loopback bytes. They do **not** establish reset-during-frame behavior, all legal request sequences, RX robustness, or physical FPGA operation. See [`tb/test_uart_tx_handshake.sv`](tb/test_uart_tx_handshake.sv) for the observed busy-rejection and consecutive-frame regression.
 
-**Learning notes:** [UART TX timing and FSM walkthrough](docs/learning_uart_tx_timing.md) — before/after RTL snippets, state-flow explanations, text chronograms, and exercises for reading Questa traces. **Engineering evidence:** [Start-bit defect diagnosis](docs/tx_start_bit_debug.md).
+**Hands-on visual guide:** [UART TX illustrated lab notebook (PDF)](docs/guides/UART_TX_Hands_On_Lab_Guide.pdf) - revised for the 20 Nov handshake and loopback results (revision v2 is provided for local Git upload). **Learning notes:** [TX timing and FSM walkthrough](docs/learning_uart_tx_timing.md). **Evidence index:** [Questa results and waveform captures](docs/evidence/README.md). **Engineering diagnosis:** [Start-bit defect report](docs/tx_start_bit_debug.md).
 
 From the repository root, run the independent TX frame test in Questa:
 
@@ -173,7 +177,7 @@ See [docs/verification.md](docs/verification.md) for the detailed record and cav
 
 This repository is a baseline, not yet a production-quality UART IP block. The next planned improvements are documented in [docs/next_steps.md](docs/next_steps.md). In particular:
 
-1. **Done on development branch:** align TX start timing and independently test phase sensitivity; complete integration and handshake regressions before merging.
+1. **Verified in author-supplied Questa runs on development branch:** TX phase timing, complete TX frames, selected handshake scenarios, and 8/8 post-fix TX/RX loopback. Review testbench posedge stimulus scheduling and reset scenarios before merging.
 2. Derive the RX counter width from `CLKS_PER_BIT` instead of fixing it at 9 bits.
 3. Guard the `$clog2` counter width for edge parameter values.
 4. Expand verification beyond loopback byte patterns (independent TX/RX tests, variable idle gaps, framing errors, reset during traffic, and parameter variations).
