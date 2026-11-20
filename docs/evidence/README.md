@@ -6,7 +6,7 @@ This folder contains screenshots supplied by the project author from Questa Alte
 
 [Open UART TX — Hands-On Verification Guide (PDF)](../guides/UART_TX_Hands_On_Lab_Guide.pdf)
 
-The PDF contains four labs, each linked to a specific testbench or verification objective: start-bit phase timing, complete 8N1 frame, STOP-to-ready timing and busy/next-byte handshake. The busy/next-byte handshake lab is marked pending simulation.
+The revised PDF (v2, supplied for local addition) contains five labs: start-bit phase timing, full 8N1 frame, STOP-to-ready timing, busy/next-byte handshake, and corrected TX/RX loopback. The Git-committed PDF is not updated until the binary evidence bundle is added and pushed.
 
 ## Captures
 
@@ -18,7 +18,17 @@ The PDF contains four labs, each linked to a specific testbench or verification 
 
 - `tb/test_uart_tx.sv`: 434/434 passed, reported by project author from Questa transcript.
 - `tb/test_uart_tx_frame.sv`: 5 frame midpoint checks and 9 visible boundary checks passed, reported by project author from Questa transcript.
-- `tb/test_uart_tx_handshake.sv`: **not yet run**. No passing result claimed.
-- Corrected TX/RX loopback and physical FPGA test: not yet demonstrated after TX changes.
+- `tb/test_uart_tx_handshake.sv`: **PASS, 20 Nov 2026**: 2 complete frames, 1 busy-request rejection, 1 433-clock stop-to-ready check.
+- Corrected TX/RX loopback: **PASS, 20 Nov 2026**: 8 patterns passed and 0 failed, no usable waveform captured from this run.
+- Physical FPGA testing: **not yet performed**.
 
 Evidence and results refer to 50 MHz, 115200 nominal baud, and `CLKS_PER_BIT=434`.
+
+## New evidence to add from local checkout
+
+- `handshake/busy_request_0xF0_rejected.png`, `handshake/stop_to_ready_433_clocks.png`, `handshake/next_frame_0xA6_accepted.png`: three author-supplied Questa screenshots.
+- `handshake/results.log`: concise transcription of the successful handshake test summary.
+- `loopback/results.log`: concise transcription of eight successful loopback checks.
+- `../guides/UART_TX_Hands_On_Lab_Guide.pdf`: updated visual guide (Lab 04 and Lab 05).
+
+These binary files have been prepared in a separate downloadable ZIP and require a local Git commit. Do not confuse documentation edits with a completed binary upload.
