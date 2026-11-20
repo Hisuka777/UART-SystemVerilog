@@ -83,7 +83,8 @@ module test_uart_tx;
             tx_start = 1'b0;
 
             // Measure the LOW pulse from the start bit to the first data bit.
-            // The watchdog prevents a hung test from waiting indefinitely.
+            // Allow up to one full bit period of alignment latency, plus
+            // one full start bit. Watchdog still catches a stuck TX.
             fork : measure_or_timeout
                 begin : measure_pulse
                     @(negedge tx);
@@ -96,7 +97,7 @@ module test_uart_tx;
                 end
 
                 begin : watchdog
-                    #( (CLKS_PER_BIT + 20) * CLK_PERIOD );
+                    #( (2 * CLKS_PER_BIT + 20) * CLK_PERIOD );
                     $fatal(1,
                         "TIMEOUT: no complete start-bit pulse observed at phase offset %0d",
                         idle_phase_cycles);
@@ -130,15 +131,12 @@ module test_uart_tx;
         $display("Expected start-bit width: %0d clock cycles", CLKS_PER_BIT);
         $display("============================================================");
 
-        // Each trial resets both DUT blocks, then shifts tx_start relative to
-        // the baud generator. Offset 0 is the aligned/reference case; the
-        // other offsets exercise different points within the baud period.
-        check_start_bit_width(0);
-        check_start_bit_width(1);
-        check_start_bit_width(108);
-        check_start_bit_width(217);
-        check_start_bit_width(324);
-        check_start_bit_width(432);
+        // Each trial resets both DUT blocks and shifts tx_start relative to
+        // the continuously running baud generator.
+        // Exercise every possible initial phase, not just six samples.
+        for (int phase = 0; phase < CLKS_PER_BIT; phase++) begin
+            check_start_bit_width(phase);
+        end
 
         $display("------------------------------------------------------------");
         $display("TX phase-test summary: %0d passed, %0d failed",

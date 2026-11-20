@@ -8,11 +8,13 @@ module uart_tx (
     output logic       tx_busy
 );
 
-    typedef enum logic [1:0] {
-        STATE_IDLE  = 2'b00,
-        STATE_START = 2'b01,
-        STATE_DATA  = 2'b10,
-        STATE_STOP  = 2'b11
+    // Align the start-bit edge to the free-running baud generator.
+    typedef enum logic [2:0] {
+        STATE_IDLE      = 3'd0,
+        STATE_WAIT_BAUD = 3'd1,
+        STATE_START     = 3'd2,
+        STATE_DATA      = 3'd3,
+        STATE_STOP      = 3'd4
     } state_t;
 
     state_t state;
@@ -37,7 +39,19 @@ module uart_tx (
                     if (tx_start) begin
                         data_reg <= tx_data;
                         tx_busy  <= 1'b1;
-                        state    <= STATE_START;
+                        // Do not assert the start bit until a baud boundary.
+                        state    <= STATE_WAIT_BAUD;
+                    end
+                end
+
+                // Hold serial idle HIGH and busy HIGH while waiting for the
+                // next baud boundary. The START state's registered TX output
+                // becomes LOW on the following clock edge; DATA will be
+                // driven 434 clocks later at the next baud boundary.
+                STATE_WAIT_BAUD: begin
+                    tx <= 1'b1;
+                    if (baud_tick) begin
+                        state <= STATE_START;
                     end
                 end
 
