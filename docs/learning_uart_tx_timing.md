@@ -240,3 +240,55 @@ Build and verify a **back-to-back transmission and stop-bit ready/handshake test
 ---
 
 This file is a didactic engineering notebook. Keep the README brief and link here; keep factual before/after results and limitations under [tx_start_bit_debug.md](tx_start_bit_debug.md).
+
+## Learning note 02 — Busy rejection and consecutive frames (pending Questa)
+
+### What the current RTL does
+
+The `if (tx_start)` conditional is **inside `STATE_IDLE` only**. During `WAIT_BAUD`, `START`, `DATA`, or `STOP`, a one-clock `tx_start` pulse is not accepted and `data_reg` does not change. There is **no pending-request queue**.
+
+```text
+Request #1:   0x53   -- accepted in IDLE
+busy:         ______/-------------------------\______ /------
+Request #2:               0xF0 -- ignored while busy
+data_reg:     0x53   ------------------------------> 0xA6
+Request #3:                                        0xA6 -- accepted in IDLE
+```
+
+Diagram is conceptual, not measured. The first request is accepted when the FSM is IDLE and `tx_start` is sampled HIGH at `posedge clk`. A bus value change or the falling edge of `tx_start` is not itself a capture event.
+
+### Why the STOP bit needs a handshake check
+
+The serial output goes HIGH in `STATE_STOP` and stays HIGH in IDLE; the end of the stop slot is not visible from the serial pin alone. We can compare the rising `tx` edge marking STOP (for a byte with D7=0) to the falling `tx_busy` edge. For this RTL, the predicted duration is **433 system clocks** (8.66 microseconds at 50 MHz), one system clock less than the nominal 434-clock bit period because output and state are registered.
+
+This may be acceptable as an interface-ready timing detail, but it should be explicitly tested and documented. New requests must be applied while the FSM is in IDLE; `tx_busy` LOW is useful as a readiness indicator for synchronously driven requests.
+
+### Independent testbench
+
+`tb/test_uart_tx_handshake.sv` exercises:
+
+1. Transmit `0x53` and independently check all ten 8N1 bit-slot midpoints.
+2. Pulse `tx_start` for `0xF0` while `tx_busy=1`; verify `data_reg` remains `0x53`.
+3. Measure STOP rising edge to `tx_busy` falling edge, expected **433 clocks** for this version.
+4. Wait for completion and send a second valid byte `0xA6`; independently verify the complete second frame.
+
+**Status: new test not yet executed in Questa.** A passing result is required before updating the table or marking this milestone verified.
+
+Run in Questa from the repository root:
+
+```tcl
+quit -sim
+cd {C:/Users/hp/Downloads/UART/UART-SystemVerilog}
+vlib work_handshake
+vlog -work work_handshake -sv rtl/baud_generator.sv
+vlog -work work_handshake -sv rtl/uart_tx.sv
+vlog -work work_handshake -sv tb/test_uart_tx_handshake.sv
+vsim -t 1ps -voptargs=+acc work_handshake.test_uart_tx_handshake
+view wave
+add wave -r sim:/test_uart_tx_handshake/*
+run -all
+```
+
+Expected, not yet observed: `TX HANDSHAKE SUMMARY: 2 frames, 1 busy-request rejection, 1 stop-to-ready timing check passed`.
+
+After this test succeeds, rerun the pre-existing TX/RX loopback test using the corrected TX and review its testbench clock-edge stimulus for any races.
