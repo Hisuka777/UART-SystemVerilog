@@ -71,7 +71,8 @@ UART-SystemVerilog/
 ├── tb/
 │   ├── test_UART.sv
 │   ├── test_uart_tx.sv
-│   └── test_uart_tx_frame.sv
+│   ├── test_uart_tx_frame.sv
+│   └── test_uart_tx_handshake.sv
 ├── sim/
 │   └── run_questa.do
 ├── docs/
@@ -132,7 +133,7 @@ A six-phase diagnostic first exposed a **variable-length start bit** (1/6 passed
 | Visible edge intervals for `8'h55` | **9 passed** |
 | Example start-bit width from waveform cursors | **8,680,000 ps = 434 clocks** |
 
-The tests independently exercise transmitter timing and data order; they do not establish post-fix integration, RX robustness, physical FPGA behavior, or a complete ready/handshake specification.
+The tests independently exercise transmitter timing and data order; they do not establish post-fix integration, RX robustness, physical FPGA behavior, or a complete ready/handshake specification. A dedicated busy-rejection and consecutive-frame testbench is available at [`tb/test_uart_tx_handshake.sv`](tb/test_uart_tx_handshake.sv) and **awaits simulation**.
 
 **Learning notes:** [UART TX timing and FSM walkthrough](docs/learning_uart_tx_timing.md) — before/after RTL snippets, state-flow explanations, text chronograms, and exercises for reading Questa traces. **Engineering evidence:** [Start-bit defect diagnosis](docs/tx_start_bit_debug.md).
 
