@@ -241,7 +241,7 @@ Build and verify a **back-to-back transmission and stop-bit ready/handshake test
 
 This file is a didactic engineering notebook. Keep the README brief and link here; keep factual before/after results and limitations under [tx_start_bit_debug.md](tx_start_bit_debug.md).
 
-## Learning note 02 — Busy rejection and consecutive frames (pending Questa)
+## Learning note 02 — Busy rejection and consecutive frames (verified in Questa)
 
 ### What the current RTL does
 
@@ -272,7 +272,7 @@ This may be acceptable as an interface-ready timing detail, but it should be exp
 3. Measure STOP rising edge to `tx_busy` falling edge, expected **433 clocks** for this version.
 4. Wait for completion and send a second valid byte `0xA6`; independently verify the complete second frame.
 
-**Status: new test not yet executed in Questa.** A passing result is required before updating the table or marking this milestone verified.
+**Observed result (author's Questa Altera Starter FPGA Edition 2025.2, 20 November 2026):** two complete 8N1 frames (`0x53`, `0xA6`) passed, the one-cycle busy request for `0xF0` was rejected without changing `data_reg=0x53`, and the STOP-to-ready interval was measured as 433 clocks. Source: supplied Transcript and actual Questa screenshots.
 
 Run in Questa from the repository root:
 
@@ -289,6 +289,11 @@ add wave -r sim:/test_uart_tx_handshake/*
 run -all
 ```
 
-Expected, not yet observed: `TX HANDSHAKE SUMMARY: 2 frames, 1 busy-request rejection, 1 stop-to-ready timing check passed`.
+**Observed:** `TX HANDSHAKE SUMMARY: 2 frames, 1 busy-request rejection, 1 stop-to-ready timing check passed`.
 
-After this test succeeds, rerun the pre-existing TX/RX loopback test using the corrected TX and review its testbench clock-edge stimulus for any races.
+The original `tb/test_UART.sv` loopback regression was rerun on 20 November 2026 after the TX correction: 8/8 patterns passed (`00`, `FF`, `AA`, `55`, `A5`, `3C`, `81`, `18`), 0 failed. Because the script added wave signals only after `run -all`, it did **not** produce a usable loopback waveform. A later improvement is to fix the original testbench's posedge-clock stimulus race and rerun a wave-enabled integration simulation.
+
+
+## Visual evidence update - 20 November 2026
+
+The updated [illustrated UART TX lab guide (PDF)](guides/UART_TX_Hands_On_Lab_Guide.pdf) includes Lab 04 with three real Questa captures (busy request rejected, 433-clock stop-to-ready measurement, next accepted byte) and Lab 05 with the 8/8 post-fix loopback result. The updated PDF and new screenshot files are delivered separately for addition from the local checkout; do not mark their binary upload complete until the Git commit includes them.
