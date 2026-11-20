@@ -82,9 +82,11 @@ This test checks all 10 midpoint values of 8N1 frames and measures all nine **vi
 
 - [PASS, Questa author run] Every phase offset 0–433 yields a 434-cycle start LOW pulse.
 - [PASS, author's Questa run] `tx_data` is latched at accepted `tx_start` and sent D0-first for checked payloads including `8'h53` and alternating patterns.
-- [PASS, author's Questa run] Frame midpoint data and nine visible edge intervals with `0x55`. [PENDING] Dedicated stop/ready handshake under back-to-back requests.
-- Verify `tx_busy`, reset behavior and re-requests while busy.
-- Existing UART loopback regression remains passing.
+- [PASS, author's Questa run] Frame midpoint data and nine visible edge intervals with `0x55`.
+- [PASS, 20 Nov 2026] Independent handshake: 2 complete frames (`53`, `A6`), 1 rejected-busy request (`F0`), and 433-clock STOP-to-ready measurement.
+- [PASS, 20 Nov 2026] Corrected TX/RX loopback: 8 passed, 0 failed (`00`, `FF`, `AA`, `55`, `A5`, `3C`, `81`, `18`).
+- [PARTIAL] `tx_busy` and a one-cycle re-request while busy verified; reset during active TX and more boundary requests remain untested.
+- [PASS] Post-fix UART loopback regression passed in the author's Questa run; testbench posedge stimulus race and absent wave capture remain to be addressed.
 - Build outputs, timestamped simulator log and at least one annotated waveform are retained as evidence. Do not commit generated simulator libraries (`work/`, `rtl_work/`) or WLF files.
 
 ## Recommended Git history
@@ -94,4 +96,4 @@ This test checks all 10 midpoint values of 8N1 frames and measures all nine **vi
 
 ## Limitations
 
-This document records test output supplied by the project author. A source review was performed against the live GitHub development branch, but the simulations have not been independently rerun here. Dedicated ready/handshake, reset-during-transmission, post-fix integration, and hardware checks remain outstanding.
+This document records test output supplied by the project author. A source review was performed against the live GitHub development branch, but the simulations have not been independently rerun here. Selected ready/handshake and post-fix integration scenarios have passed; reset-during-transmission, independent RX corner-case testing, parameter variations, timing closure for the changed RTL, and hardware checks remain outstanding.
