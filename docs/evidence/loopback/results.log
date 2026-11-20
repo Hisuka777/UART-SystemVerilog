@@ -1,0 +1,12 @@
+UART TX/RX loopback regression - 2026-11-20
+Simulator: Questa Altera Starter FPGA Edition 2025.2
+Source: author-supplied Questa Transcript (summary excerpt; not a raw transcript)
+RTL: corrected WAIT_BAUD UART TX with existing RX synchronizer and RX FSM
+
+Inputs / received: 00/00 PASS, FF/FF PASS, AA/AA PASS, 55/55 PASS, A5/A5 PASS, 3C/3C PASS, 81/81 PASS, 18/18 PASS
+Tests passed = 8
+Tests failed = 0
+Simulation $finish at 759710 ns
+
+No loopback waveform saved by this run; signal visibility requested after simulation had ended.
+Potential testbench posedge stimulus scheduling race remains for later clean-up.

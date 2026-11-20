@@ -1,0 +1,12 @@
+UART TX handshake regression - 2026-11-20
+Simulator: Questa Altera Starter FPGA Edition 2025.2
+Configuration: 50 MHz; nominal 115200 baud; CLKS_PER_BIT=434
+Source: author-supplied Questa Transcript (summary excerpt; not a raw transcript)
+
+PASS: busy request 0xF0 ignored; data_reg remains 0x53
+PASS: stop-to-ready interval = 433 clocks
+PASS: 8N1 frame 53 completed and TX became ready
+PASS: 8N1 frame a6 completed and TX became ready
+TX HANDSHAKE SUMMARY: 2 frames, 1 busy-request rejection, 1 stop-to-ready timing check passed
+
+No reset-during-TX coverage; FPGA hardware not tested.
